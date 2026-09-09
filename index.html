@@ -91,6 +91,11 @@
 
   /* grid */
   .gridcard{margin-top:18px}
+  .gridhead{display:flex;justify-content:space-between;align-items:center;
+    gap:14px;flex-wrap:wrap;margin-bottom:11px}
+  .gridhead h2{margin:0}
+  .gridhead .day{min-width:auto;font-size:13px;padding:4px 10px}
+  td.dayrow{height:22px}
   table{border-collapse:collapse;width:100%;font-size:12px}
   th.hr{font-weight:500;color:var(--muted);font-size:10.5px;padding-bottom:5px;
     text-align:left;font-variant-numeric:tabular-nums}
@@ -154,10 +159,15 @@
   </div>
 
   <div class="card gridcard">
-    <h2 id="gridtitle">Load through the day</h2>
+    <div class="gridhead">
+      <h2 id="gridtitle">Load through the day</h2>
+      <div class="days" id="gmode">
+        <button class="day" data-g="building">By building</button>
+        <button class="day" data-g="week">Whole week</button>
+      </div>
+    </div>
     <div style="overflow-x:auto"><table id="grid"></table></div>
-    <p class="gnote">Each cell is a half hour; the outlined column is the time you're on.
-    Click a cell to jump to it, or a building name to open it.</p>
+    <p class="gnote" id="gnote"></p>
   </div>
 
   <p class="foot">
@@ -191,7 +201,7 @@ const LAYOUT = {
   SP:{x:498,y:306,w:78, h:132}
 };
 
-let day = 1, minute = 840, sel = null, term = DATA.order[0];
+let day = 1, minute = 840, sel = null, term = DATA.order[0], gmode = 'building';
 
 const rooms = [];            // flat list of every scheduled room
 const byBldg = {};
@@ -327,38 +337,78 @@ function paintPanel(res){
 function paintGrid(){
   const t=document.getElementById('grid');
   const slots=[]; for(let m=480;m<1320;m+=30) slots.push(m);
-  const cache=slots.map(m=>loadFor(day,m));
+  const hdr=m=>(m%120===0)?fmt(m).replace(':00','').replace(' AM','a').replace(' PM','p'):'';
+  const who=sel?(DATA.names[sel]||sel):null;
   let h='<tr><td class="bn"></td>';
-  slots.forEach((m,i)=>{ h+='<th class="hr">'+((m%120===0)?(fmt(m).replace(':00','').replace(' AM','a').replace(' PM','p')):'')+'</th>'; });
+  slots.forEach(m=>{h+='<th class="hr">'+hdr(m)+'</th>';});
   h+='</tr>';
-  const order=[...BL];
-  order.forEach(b=>{
-    h+='<tr data-b="'+b+'"><td class="bn">'+(DATA.names[b]||b)+'</td>';
-    cache.forEach((c,si)=>{
-      const r=c.out[b];
-      h+='<td class="cell" data-m="'+slots[si]+'" data-now="'+(slots[si]===minute?1:0)+'"'+
-         ' style="background:'+color(r.p)+'"></td>';
-    });
-    h+='</tr>';
-  });
-  t.innerHTML=h;
-  t.querySelectorAll('tr[data-b]').forEach(row=>{
-    row.querySelector('.bn').style.cursor='pointer';
-    row.querySelector('.bn').onclick=()=>select(row.dataset.b);
-    row.querySelectorAll('.cell').forEach((c,i)=>{
-      const r=cache[i].out[row.dataset.b];
-      c.title=fmt(slots[i])+' — '+r.n+'/'+r.total+' rooms';
-      c.onclick=()=>{minute=+c.dataset.m;
-        document.getElementById('time').value=minute; render(); markNow();};
-    });
-  });
-}
 
-function markNow(){
-  document.querySelectorAll('#grid .cell').forEach(c=>
-    c.setAttribute('data-now', +c.dataset.m===minute?1:0));
+  if(gmode==='week'){
+    document.getElementById('gridtitle').textContent=
+      'The whole week'+(who?' — '+who:'')+', '+term;
+    document.getElementById('gnote').textContent=
+      (who?who+' only. ':'All buildings together. ')+
+      'Rows are days, columns are half hours. Click a cell to jump to that day and time.';
+    const rows=DAYS.map((_,d)=>slots.map(m=>{
+      const o=loadFor(d,m).out;
+      if(who) return o[sel];
+      let n=0,tot=0; for(const b of BL){n+=o[b].n;tot+=o[b].total;}
+      return {n,total:tot,p:n/tot};
+    }));
+    DAYS.forEach((dn,d)=>{
+      h+='<tr data-d="'+d+'"><td class="bn dayrow">'+dn+'</td>';
+      rows[d].forEach((r,si)=>{
+        const now=(d===day && slots[si]===minute)?1:0;
+        h+='<td class="cell" data-m="'+slots[si]+'" data-d="'+d+'" data-now="'+now+'"'+
+           ' style="background:'+color(r.p)+'"></td>';
+      });
+      h+='</tr>';
+    });
+    t.innerHTML=h;
+    t.querySelectorAll('tr[data-d]').forEach(row=>{
+      const d=+row.dataset.d;
+      row.querySelectorAll('.cell').forEach((c,i)=>{
+        const r=rows[d][i];
+        c.title=DAYS[d]+' '+fmt(slots[i])+' — '+r.n+'/'+r.total+' rooms';
+        c.onclick=()=>{day=d; minute=+c.dataset.m;
+          document.getElementById('time').value=minute; render(); paintGrid();};
+      });
+    });
+  } else {
+      document.getElementById('gnote').textContent=
+      'Rows are buildings, columns are half hours on '+DAYS[day]+
+      '. Click a cell to jump to that time, or a building name to open it.';
+    const cache=slots.map(m=>loadFor(day,m));
+    BL.forEach(b=>{
+      h+='<tr data-b="'+b+'"><td class="bn">'+(DATA.names[b]||b)+'</td>';
+      cache.forEach((c,si)=>{
+        h+='<td class="cell" data-m="'+slots[si]+'" data-now="'+(slots[si]===minute?1:0)+'"'+
+           ' style="background:'+color(c.out[b].p)+'"></td>';
+      });
+      h+='</tr>';
+    });
+    t.innerHTML=h;
+    t.querySelectorAll('tr[data-b]').forEach(row=>{
+      row.querySelector('.bn').style.cursor='pointer';
+      row.querySelector('.bn').onclick=()=>select(row.dataset.b);
+      row.querySelectorAll('.cell').forEach((c,i)=>{
+        const r=cache[i].out[row.dataset.b];
+        c.title=fmt(slots[i])+' — '+r.n+'/'+r.total+' rooms';
+        c.onclick=()=>{minute=+c.dataset.m;
+          document.getElementById('time').value=minute; render(); markNow();};
+      });
+    });
+  }
+  document.querySelectorAll('#gmode .day').forEach(b=>
+    b.setAttribute('aria-pressed', b.dataset.g===gmode));
 }
-function select(b){ sel = (sel===b)?null:b; render(); }
+function markNow(){
+  document.querySelectorAll('#grid .cell').forEach(c=>{
+    const ok = +c.dataset.m===minute && (gmode!=='week' || +c.dataset.d===day);
+    c.setAttribute('data-now', ok?1:0);
+  });
+}
+function select(b){ sel = (sel===b)?null:b; render(); paintGrid(); }
 
 function render(){
   const res = loadFor(day, minute);
@@ -371,7 +421,6 @@ function render(){
   paintMap(res); paintPanel(res);
   document.querySelectorAll('#days .day').forEach(d=>
     d.setAttribute('aria-pressed', +d.dataset.d===day));
-  document.getElementById('gridtitle').textContent='Load through '+DAYS[day]+', '+term;
 }
 
 // wire up
@@ -390,6 +439,9 @@ DAYS.forEach((d,i)=>{
   b.setAttribute('aria-label', d);
   b.onclick=()=>{day=i; render(); paintGrid();};
   dd.append(b);
+});
+document.querySelectorAll('#gmode .day').forEach(b=>{
+  b.onclick=()=>{ gmode=b.dataset.g; paintGrid(); };
 });
 document.getElementById('time').addEventListener('input',e=>{
   minute=+e.target.value; render(); markNow();
