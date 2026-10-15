@@ -141,6 +141,49 @@
   td.cell[data-now="1"]{outline:2px solid var(--ink);outline-offset:-2px}
   .gnote{font-size:12.5px;color:var(--muted);margin-top:10px}
 
+
+  /* term comparison */
+  .cmp{margin-top:18px}
+  .cmphead{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:flex-end;margin-bottom:12px}
+  .cmphead h2{margin:0 auto 0 0}
+  .cmp select{font-size:16px;min-width:150px;padding:4px 8px}
+  .kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:0 0 16px}
+  .kpi{border:1px solid var(--line);background:var(--paper);padding:10px 12px;min-width:0}
+  .kpi .kl{font-size:12px;color:var(--muted);line-height:1.25;min-height:30px}
+  .kpi b{display:block;font-family:'Barlow Semi Condensed',sans-serif;font-size:28px;font-weight:600;
+    line-height:1.1;font-variant-numeric:tabular-nums;margin-top:2px}
+  .kpi .kd{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .cmpcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+  .cmpcols h3{font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:17px;margin:0 0 2px}
+  .cmpcols .cardsub{margin-bottom:8px}
+  .swat{display:inline-block;width:11px;height:11px;vertical-align:-1px;margin-right:5px}
+  .chartleg{font-size:12.5px;color:var(--muted);margin:0 0 4px}
+  .chartleg span{margin-right:14px}
+  svg.dchart{width:100%;height:auto;display:block}
+  svg.dchart text{font-family:'Barlow Semi Condensed',sans-serif;fill:var(--ink)}
+  table.st{border-collapse:collapse;width:100%;font-size:13.5px;margin-top:12px}
+  table.st th{font-weight:500;color:var(--muted);font-size:12px;text-align:right;padding:4px 8px;border-bottom:1px solid var(--line)}
+  table.st th:first-child{text-align:left;padding-left:0}
+  table.st td{padding:5px 8px;border-bottom:1px solid #DEE3DC;text-align:right;font-variant-numeric:tabular-nums}
+  table.st td:first-child{text-align:left;padding-left:0}
+  table.st td.chg{font-weight:600}
+  table.st tr.sec td{padding-top:12px;font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:13px;color:var(--muted);border-bottom:0;text-align:left}
+  table.dm{border-collapse:separate;border-spacing:2px;width:100%;table-layout:fixed}
+  table.dm th{font-weight:500;color:var(--muted);font-size:12px;text-align:center;padding:0 0 3px}
+  table.dm th.rowh{text-align:right;padding-right:8px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  table.dm col.c-time{width:74px}
+  table.dm td{height:22px;padding:0;text-align:center;font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;
+    font-size:12.5px;font-variant-numeric:tabular-nums;line-height:22px}
+  .dleg{display:flex;align-items:center;gap:9px;margin-top:12px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+  .dleg .bar{flex:1;height:10px;min-width:100px;max-width:260px}
+  .cmpnote{font-size:12.5px;color:var(--muted);margin:14px 0 0;max-width:90ch}
+  @media (max-width:1000px){
+    .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .cmpcols{grid-template-columns:minmax(0,1fr)}
+    #dwrap{overflow-x:auto}
+    table.dm{min-width:480px}
+  }
+
   .foot{margin-top:26px;font-size:13px;color:var(--muted);max-width:84ch}
   .foot p{margin:0 0 8px}
   .foot b{color:var(--ink);font-weight:600}
@@ -151,7 +194,7 @@
   #tip .tl{opacity:.8}
 
   @media (max-width:1000px){
-    .cols{grid-template-columns:1fr}
+    .cols{grid-template-columns:minmax(0,1fr)}
     .headline{margin-left:0}
     #gridwrap{overflow-x:auto}
     table.hm{min-width:520px}
@@ -164,7 +207,7 @@
   <h1>Where the rooms are, and when classes meet</h1>
   <p class="sub">Lehman College. Pick a term, day and time. The map shows how full each building is at that
   moment, and the grid beside it shows how many classes meet across the whole week. Click a cell in the
-  grid to move the map to that day and time.</p>
+  grid to move the map to that day and time. <a href="#compare" style="color:var(--accent)">Jump to what changed between terms</a>.</p>
 
   <div class="controls">
     <div>
@@ -247,6 +290,32 @@
         <div class="dlist" id="dlist"></div>
       </div>
     </div>
+  </div>
+
+
+  <div class="card cmp" id="compare">
+    <div class="cmphead">
+      <h2>What changed between terms</h2>
+      <div><div class="ctl-label" id="l-ca">Compare</div><select id="cmpA" aria-labelledby="l-ca"></select></div>
+      <div><div class="ctl-label" id="l-cb">with</div><select id="cmpB" aria-labelledby="l-cb"></select></div>
+    </div>
+    <div class="note" id="cmpdraft" hidden></div>
+    <div class="cmpcols">
+      <div>
+        <h3>Share of the week's class time, by day</h3>
+        <p class="cardsub">Class time is the hours classes meet, so a 3-hour class counts three times a 1-hour class. Shares stay comparable even when one term has more classes than the other.</p>
+        <div class="chartleg" id="dleg"></div>
+        <svg class="dchart" id="dchart" viewBox="0 0 560 230" role="img" aria-label=""></svg>
+        <table class="st" id="daytable"></table>
+      </div>
+      <div>
+        <h3>Where the load moved</h3>
+        <p class="cardsub" id="dsub"></p>
+        <div id="dwrap"></div>
+        <div class="dleg" id="dlegend"></div>
+      </div>
+    </div>
+    <p class="cmpnote" id="cmpnote"></p>
   </div>
 
   <div class="card gridcard" id="gridcard">
@@ -942,6 +1011,186 @@ const Times = (() => {
   return {drawGrid, markSel, current, onChange: f => { hook = f; }};
 })();
 
+/* ====================================================================
+   Term comparison. Fixed rules so two terms are compared like with like:
+   distinct classes (cross-listed counted once), in person + hybrid with hybrid
+   counted in full, no events. Reads the same data as the class grid.
+   ==================================================================== */
+const Compare = (() => {
+  const DATA = TIMESDATA;
+  const DN = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const FULLDAY = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const A_COL = '#8E9B95', B_COL = '#D2673C', ZERO = '#ECEFE9', INK = '#1B211E';
+  const NEG = ['#DCE8EA','#9CC3C9','#5A9AA4','#2F6F7A','#1B4A54'];
+  const POS = ['#F3E6AE','#EFC66B','#E8A24F','#D2673C','#A83A2E','#7A2323'];
+  const hex = s => [1, 3, 5].map(k => parseInt(s.substr(k, 2), 16));
+  const lerp = (stops, t) => {
+    const pos = Math.max(0, Math.min(1, t)) * (stops.length - 1);
+    const i = Math.min(Math.floor(pos), stops.length - 2), f = pos - i;
+    const a = hex(stops[i]), b = hex(stops[i + 1]);
+    return '#' + a.map((v, k) => Math.round(v + (b[k] - v) * f).toString(16).padStart(2, '0')).join('');
+  };
+  const lum = h => {
+    const c = hex(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); });
+    return .2126 * c[0] + .7152 * c[1] + .0722 * c[2];
+  };
+  const t12 = m => { const h = Math.floor(m / 60), mm = m % 60; return (h % 12 || 12) + ':' + String(mm).padStart(2, '0') + ' ' + (h < 12 ? 'AM' : 'PM'); };
+  const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const MINUS = '−';
+  const sgn = (v, digits) => { const f = Math.abs(v).toFixed(digits); return (Number(f) === 0 ? '' : v > 0 ? '+' : MINUS) + f; };
+  const rel = (a, b) => a ? (b - a) / a * 100 : null;
+  const relTxt = (a, b) => { const r = rel(a, b); return r === null ? '–' : sgn(r, 0) + '%'; };
+
+  function analyze(name) {
+    const T = DATA.terms[name];
+    const seen = new Map();
+    T.rows.forEach(r => { if (!seen.has(r[12])) seen.set(r[12], r); });
+    const cl = [...seen.values()];
+    const meet = Array(7).fill(0), hrs = Array(7).fill(0);
+    const grid = Array.from({length: 7}, () => Array(48).fill(0));
+    let morning = 0, afternoon = 0, evening = 0, mins = 0;
+    cl.forEach(r => {
+      const d = r[3], len = r[5] - r[4];
+      meet[d]++; hrs[d] += len / 60; mins += len;
+      for (let t = Math.ceil(r[4] / 30) * 30; t < r[5]; t += 30) grid[d][t / 30]++;
+      const ov = (lo, hi) => Math.max(0, Math.min(r[5], hi) - Math.max(r[4], lo)) / 60;
+      morning += ov(0, 720); afternoon += ov(720, 1080); evening += ov(1080, 1440);
+    });
+    const totH = hrs.reduce((x, y) => x + y, 0);
+    let peak = 0, pd = 0, ps = 0;
+    grid.forEach((row, d) => row.forEach((v, s) => { if (v > peak) { peak = v; pd = d; ps = s; } }));
+    const wk = []; for (let d = 0; d < 5; d++) for (let s = 16; s < 44; s++) wk.push(grid[d][s]);   // Mon-Fri 8:00 AM-10:00 PM
+    const mean = avg(wk);
+    const mf = hrs.slice(0, 5), m = avg(mf);
+    const cv = Math.sqrt(avg(mf.map(x => (x - m) * (x - m)))) / m;
+    const sec = new Map();
+    T.rows.forEach(r => {
+      const k = r[0] + '|' + r[1]; let o = sec.get(k);
+      if (!o) { o = {days: new Set(), hy: false}; sec.set(k, o); }
+      o.days.add(r[3]); if (r[2] === 1) o.hy = true;
+    });
+    let multi = 0, hy = 0; sec.forEach(o => { if (o.days.size >= 2) multi++; if (o.hy) hy++; });
+    return {
+      name, T, n: cl.length, meet, hrs, totH, grid, peak, peakAt: DN[pd] + ' ' + t12(ps * 30),
+      peakDay: grid.map(r => Math.max(...r)), mean, ptm: peak / mean, cv,
+      share: hrs.map(h => 100 * h / totH),
+      fs: 100 * (hrs[4] + hrs[5]) / totH, tt: 100 * (hrs[1] + hrs[3]) / totH,
+      morning: 100 * morning / totH, afternoon: 100 * afternoon / totH, evening: 100 * evening / totH,
+      avgLen: mins / cl.length, sections: sec.size, multi: 100 * multi / sec.size,
+      hy: T.source === 'rooms' ? null : 100 * hy / sec.size
+    };
+  }
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const E = (n, a, txt) => { const e = document.createElementNS(svgNS, n); for (const k in a) e.setAttribute(k, a[k]); if (txt !== undefined) e.textContent = txt; return e; };
+  const H = (tag, txt, cls) => { const e = document.createElement(tag); if (txt !== undefined) e.textContent = txt; if (cls) e.className = cls; return e; };
+
+  function chart(a, b) {
+    const svg = document.getElementById('dchart'); svg.replaceChildren();
+    const mx = Math.max(...a.share, ...b.share), top = 22, base = 196, ph = base - top - 14;
+    const gw = 560 / 7, bw = 28;
+    svg.setAttribute('aria-label', 'Share of weekly class time by day. ' + DN.map((d, i) =>
+      d + ' ' + a.share[i].toFixed(1) + '% in ' + a.name + ', ' + b.share[i].toFixed(1) + '% in ' + b.name).join('; ') + '.');
+    svg.append(E('line', {x1: 0, x2: 560, y1: base, y2: base, stroke: '#C8CEC6'}));
+    DN.forEach((d, i) => {
+      const x0 = i * gw + gw / 2 - bw - 2;
+      [[a.share[i], A_COL, x0], [b.share[i], B_COL, x0 + bw + 4]].forEach(([v, c, x]) => {
+        const h = Math.max(v > 0 ? 1.5 : 0, v / mx * ph);
+        svg.append(E('rect', {x, y: base - h, width: bw, height: h, fill: c}));
+        svg.append(E('text', {x: x + bw / 2, y: base - h - 4, 'text-anchor': 'middle', 'font-size': 11.5, 'font-weight': 600}, v.toFixed(1)));
+      });
+      svg.append(E('text', {x: i * gw + gw / 2, y: base + 18, 'text-anchor': 'middle', 'font-size': 13, 'font-weight': 600}, d));
+    });
+    const lg = document.getElementById('dleg'); lg.replaceChildren();
+    [[a.name, A_COL], [b.name, B_COL]].forEach(([n, c]) => {
+      const s = H('span'); const sw = H('i', undefined, 'swat'); sw.style.background = c; s.append(sw, document.createTextNode(n)); lg.append(s);
+    });
+  }
+
+  function tables(a, b) {
+    const dt = document.getElementById('daytable'); dt.replaceChildren();
+    const hr = H('tr'); ['Class hours a week', a.name, b.name, 'Change'].forEach(x => hr.append(H('th', x)));
+    const th = H('thead'); th.append(hr); dt.append(th);
+    const tb = H('tbody');
+    FULLDAY.forEach((d, i) => {
+      const r = H('tr'); r.append(H('td', d), H('td', Math.round(a.hrs[i]).toLocaleString()), H('td', Math.round(b.hrs[i]).toLocaleString()), H('td', relTxt(a.hrs[i], b.hrs[i]), 'chg'));
+      tb.append(r);
+    });
+    const r = H('tr'); r.append(H('td', 'Whole week'), H('td', Math.round(a.totH).toLocaleString()), H('td', Math.round(b.totH).toLocaleString()), H('td', relTxt(a.totH, b.totH), 'chg'));
+    r.style.fontWeight = '600'; tb.append(r);
+    dt.append(tb);
+
+  }
+
+  function diff(a, b) {
+    const wrap = document.getElementById('dwrap'); wrap.replaceChildren();
+    let lo = 48, hi = -1, M = 0;
+    for (let s = 0; s < 48; s++) for (let d = 0; d < 7; d++) {
+      const v = b.grid[d][s] - a.grid[d][s];
+      if (a.grid[d][s] || b.grid[d][s]) { lo = Math.min(lo, s); hi = Math.max(hi, s); }
+      M = Math.max(M, Math.abs(v));
+    }
+    document.getElementById('dsub').textContent = 'Classes in session in ' + b.name + ' minus ' + a.name + ', at each half hour. '
+      + 'Warm cells have more classes meeting at that time in ' + b.name + '; blue cells have fewer.';
+    const dl = document.getElementById('dlegend'); dl.replaceChildren();
+    if (hi < 0 || M === 0) {
+      const e = H('div', undefined, 'empty'); e.append(H('b', 'No difference to show'), H('span', 'Pick two different terms.')); wrap.append(e); return;
+    }
+    const tbl = H('table', undefined, 'dm');
+    tbl.setAttribute('aria-label', 'Change in classes in session by day and time, ' + b.name + ' minus ' + a.name);
+    const cg = H('colgroup'); const c0 = H('col'); c0.className = 'c-time'; cg.append(c0); for (let d = 0; d < 7; d++) cg.append(H('col')); tbl.append(cg);
+    const th = H('thead'), hr = H('tr'); const corner = H('th', 'Time'); corner.style.textAlign = 'right'; corner.style.paddingRight = '8px'; hr.append(corner);
+    DN.forEach((d, i) => { const h = H('th', d); h.scope = 'col'; h.title = FULLDAY[i]; hr.append(h); }); th.append(hr); tbl.append(th);
+    const tb = H('tbody');
+    for (let s = lo; s <= hi; s++) {
+      const tr = H('tr'); const rh = H('th', t12(s * 30), 'rowh'); rh.scope = 'row'; tr.append(rh);
+      for (let d = 0; d < 7; d++) {
+        const av = a.grid[d][s], bv = b.grid[d][s], v = bv - av;
+        const td = H('td', v ? sgn(v, 0) : '');
+        const col = v === 0 ? ZERO : v > 0 ? lerp(POS, .04 + .96 * v / M) : lerp(NEG, .04 + .96 * -v / M);
+        td.style.background = col; td.style.color = lum(col) < .2 ? '#FFFFFF' : INK;
+        td.title = DN[d] + ' ' + t12(s * 30) + ': ' + av + ' in ' + a.name + ', ' + bv + ' in ' + b.name;
+        tr.append(td);
+      }
+      tb.append(tr);
+    }
+    tbl.append(tb); wrap.append(tbl);
+    const stops = [...NEG].reverse().map((c, i, arr) => c).concat([ZERO]).concat(POS);
+    const bar = H('span', undefined, 'bar'); bar.style.background = 'linear-gradient(90deg,' + stops.join(',') + ')';
+    const l1 = H('span', MINUS + M + ' fewer'), l2 = H('span', '+' + M + ' more');
+    dl.append(l1, bar, l2, H('span', '· cells show the number of classes'));
+  }
+
+  function draw() {
+    const na = document.getElementById('cmpA').value, nb = document.getElementById('cmpB').value;
+    const a = analyze(na), b = analyze(nb);
+    // draft caution
+    const dn = document.getElementById('cmpdraft');
+    const msgs = [na, nb].filter((n, i, arr) => arr.indexOf(n) === i && DATA.terms[n].draft).map(n => {
+      const T = DATA.terms[n], all = new Set(T.rows.map(r => r[12])).size, pend = new Set(T.rows.filter(r => r[6] === 1).map(r => r[12])).size;
+      const nd = (T.summary.skipped || {})['no usable day/time'] || 0;
+      return n + ' is still a draft: ' + Math.round(pend / all * 100) + '% of its classes have no room yet and ' + nd.toLocaleString()
+        + ' sections have no day or time yet, so its totals will move as the schedule fills in. Compare the shares and the shape of the week, which are steadier than raw counts.';
+    });
+    dn.hidden = !msgs.length; dn.textContent = msgs.join(' ');
+    chart(a, b); tables(a, b); diff(a, b);
+    document.getElementById('cmpnote').textContent =
+      'Counts distinct classes: a class listed under several course codes counts once, hybrid sections count in full, and events are left out.'
+      + (na === nb ? ' Both terms are the same, so there is nothing to compare; pick two different terms.' : '');
+  }
+
+  function init() {
+    const sa = document.getElementById('cmpA'), sb = document.getElementById('cmpB');
+    [...UNI_ORDER].reverse().forEach(n => {          // oldest first
+      [sa, sb].forEach(s => { const o = document.createElement('option'); o.value = n; o.textContent = n + (DATA.terms[n].draft ? ' (draft)' : ''); s.append(o); });
+    });
+    sa.value = 'Spring 2026'; sb.value = 'Spring 2027';
+    sa.addEventListener('change', draw); sb.addEventListener('change', draw);
+    draw();
+  }
+  return {init, analyze};
+})();
+
 /* ---------- page-level render and wiring ---------- */
 function setMapUI(){
   const m = hasMap();
@@ -1015,6 +1264,7 @@ document.getElementById('time').addEventListener('input',e=>{
 });
 Times.onChange(render);                  // a grid filter changed: refresh the headline for terms with no map
 buildMap(); Times.drawGrid(); render(); paintGrid();
+Compare.init();
 </script>
 </body>
 </html>
